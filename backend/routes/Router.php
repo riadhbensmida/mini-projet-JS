@@ -54,8 +54,9 @@ class Router
                 continue;
 
             // Convert route pattern to regex: /api/books/{id} => /api/books/([^/]+)
+            // Make trailing slash optional
             $pattern = preg_replace('/\{([^}]+)\}/', '([^/]+)', $route['path']);
-            $pattern = '#^' . $pattern . '$#';
+            $pattern = '#^' . rtrim($pattern, '/') . '/?$#';
 
             if (preg_match($pattern, $uri, $matches)) {
                 array_shift($matches); // Remove full match

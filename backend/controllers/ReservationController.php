@@ -38,9 +38,41 @@ class ReservationController
     public function store(): void
     {
         $data = json_decode(file_get_contents('php://input'), true);
+        $bookId = $data['book_id'] ?? '';
+        $userId = $data['user_id'] ?? '';
 
-        $this->reservationModel->book_id = $data['book_id'] ?? '';
-        $this->reservationModel->user_id = $data['user_id'] ?? '';
+        // 1. Validate book existence and availability
+        $book = $this->bookModel->readById($bookId);
+        if (!$book) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Livre non trouvé']);
+            return;
+        }
+
+        // Rule: Only reserve if NO copies are available
+        if ($book['available_copies'] > 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Ce livre est disponible, vous pouvez l\'emprunter directement.']);
+            return;
+        }
+
+        // 2. Check if user already has an active reservation for this book
+        if ($this->reservationModel->hasActiveReservation($userId, $bookId)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Vous avez déjà une réservation active pour ce livre.']);
+            return;
+        }
+
+        // 3. Check limit: max 5 active reservations per member
+        $activeCount = $this->reservationModel->countActiveByUserId($userId);
+        if ($activeCount >= 5) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Limite de 5 réservations actives atteinte.']);
+            return;
+        }
+
+        $this->reservationModel->book_id = $bookId;
+        $this->reservationModel->user_id = $userId;
 
         if ($this->reservationModel->create()) {
             http_response_code(201);

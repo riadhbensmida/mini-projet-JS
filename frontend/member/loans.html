@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Emprunts | Bibli'Net</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="../css/index.css?v=1.1">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    },
+                    boxShadow: {
+                        'warm': '0 10px 30px -10px rgba(15, 23, 42, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 flex h-screen overflow-hidden">
+    <div id="sidebarContainer" style="view-transition-name: sidebar"></div>
+    
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div id="headerContainer" style="view-transition-name: header"></div>
+        
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="mb-8">
+                <h1 class="text-2xl font-serif font-bold text-library-navy">Mes Emprunts</h1>
+                <p class="text-slate-500 mt-1">Gérez vos emprunts en cours et consultez votre historique.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-warm border border-slate-100 overflow-hidden">
+                <div class="border-b border-slate-200">
+                    <nav id="loanTabs" class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+                        <button onclick="setTab('current')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-library-amber text-library-amber" data-tab="current">En cours</button>
+                        <button onclick="setTab('history')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-tab="history">Historique</button>
+                    </nav>
+                </div>
+
+                <div id="loansContent" class="p-6">
+                    <!-- Dynamic content will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components.js"></script>
+    <script>
+        let myLoans = [];
+        let allBooks = [];
+        let activeTab = 'current';
+
+        async function loadData() {
+            try {
+                const [loans, books, user] = await Promise.all([
+                    api.loans.getAll(),
+                    api.books.getAll(),
+                    api.auth.me()
+                ]);
+                myLoans = loans.filter(l => l.user_id == user.id);
+                allBooks = books;
+                renderLoans();
+            } catch (err) { console.error(err); }
+        }
+
+        function setTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tab) {
+                    btn.classList.add('border-library-amber', 'text-library-amber');
+                    btn.classList.remove('border-transparent', 'text-slate-500');
+                } else {
+                    btn.classList.remove('border-library-amber', 'text-library-amber');
+                    btn.classList.add('border-transparent', 'text-slate-500');
+                }
+            });
+            renderLoans();
+        }
+
+        function renderLoans() {
+            const container = document.getElementById('loansContent');
+            
+            if (activeTab === 'current') {
+                const current = myLoans.filter(l => l.status === 'active' || l.status === 'overdue');
+                if (current.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 text-slate-500">
+                            <svg class="mx-auto h-12 w-12 text-emerald-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <p>Vous n'avez aucun emprunt en cours.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `<div class="space-y-4">${current.map(loan => {
+                    const book = allBooks.find(b => b.id == loan.book_id);
+                    const isOverdue = loan.status === 'overdue';
+                    const daysUntilDue = Math.ceil((new Date(loan.due_date) - new Date()) / (1000 * 60 * 60 * 24));
+                    const coverUrl = book && book.cover ? (book.cover.startsWith('http') ? book.cover : `http://127.0.0.1:8000/${book.cover}`) : null;
+
+                    return `
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center p-4 rounded-xl border ${isOverdue ? 'border-rose-200 bg-rose-50/30' : 'border-slate-100 bg-white shadow-sm'} transition-all hover:border-slate-200">
+                            <div class="h-20 w-14 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 mr-4 hidden sm:block">
+                                ${coverUrl ? `<img src="${coverUrl}" alt="${book.title}" class="h-full w-full object-cover">` : ''}
+                            </div>
+                            <div class="flex-1 mb-4 sm:mb-0">
+                                <h3 class="text-lg font-bold text-slate-900">${book ? book.title : 'Livre inconnu'}</h3>
+                                <p class="text-sm text-slate-500">${book ? book.author : ''}</p>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${isOverdue ? 'bg-rose-100 text-rose-700' : (daysUntilDue <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')}">
+                                        ${isOverdue ? `En retard de ${Math.abs(daysUntilDue)} jours` : `À rendre dans ${daysUntilDue} jour${daysUntilDue > 1 ? 's' : ''}`}
+                                    </span>
+                                    ${loan.penalty_amount > 0 ? `
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 uppercase tracking-wider">
+                                            Pénalité: ${loan.penalty_amount}€
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="text-left sm:text-right w-full sm:w-auto">
+                                <p class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Emprunté le ${new Date(loan.borrow_date).toLocaleDateString('fr-FR')}</p>
+                                <p class="text-sm font-bold ${isOverdue ? 'text-rose-600' : 'text-slate-900'}">Retour prévu: ${new Date(loan.due_date).toLocaleDateString('fr-FR')}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}</div>`;
+            } else {
+                const history = myLoans.filter(l => l.status === 'returned');
+                if (history.length === 0) {
+                    container.innerHTML = '<div class="text-center py-12 text-slate-500 font-medium">Votre historique d\'emprunt est vide.</div>';
+                    return;
+                }
+
+                container.innerHTML = `<div class="space-y-4">${history.map(loan => {
+                    const book = allBooks.find(b => b.id == loan.book_id);
+                    return `
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center p-4 rounded-xl border border-slate-100 bg-slate-50/50">
+                            <div class="flex-1 mb-4 sm:mb-0">
+                                <h3 class="text-base font-bold text-slate-900">${book ? book.title : 'Livre inconnu'}</h3>
+                                <p class="text-sm text-slate-500">${book ? book.author : ''}</p>
+                                ${loan.penalty_amount > 0 ? `<p class="text-xs text-rose-600 font-bold mt-1 uppercase tracking-widest">Pénalité payée: ${loan.penalty_amount}€</p>` : ''}
+                            </div>
+                            <div class="text-left sm:text-right text-xs text-slate-500 font-medium">
+                                <p>Emprunté le ${new Date(loan.borrow_date).toLocaleDateString('fr-FR')}</p>
+                                <p class="mt-1">Retourné le ${loan.return_date ? new Date(loan.return_date).toLocaleDateString('fr-FR') : '-'}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}</div>`;
+            }
+        }
+
+        async function init() {
+            try {
+                const user = await api.auth.me();
+                if (!user) { window.location.href = '/login.html'; return; }
+                document.getElementById('sidebarContainer').innerHTML = components.renderSidebar(false);
+                document.getElementById('headerContainer').innerHTML = components.renderHeader(user);
+                loadData();
+            } catch (err) { window.location.href = '/login.html'; }
+        }
+        init();
+    </script>
+</body>
+</html>

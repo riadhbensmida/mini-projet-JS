@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Emprunts | Admin | Bibli'Net</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="../css/index.css?v=1.1">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    },
+                    boxShadow: {
+                        'warm': '0 10px 30px -10px rgba(15, 23, 42, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 flex h-screen overflow-hidden">
+    <div id="sidebarContainer" style="view-transition-name: sidebar"></div>
+    
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div id="headerContainer" style="view-transition-name: header"></div>
+        
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-2xl font-serif font-bold text-library-navy">Gestion des Emprunts</h1>
+                    <p class="text-slate-500 mt-1">Suivez les emprunts et gérez les retards.</p>
+                </div>
+                <button onclick="exportCSV()" class="inline-flex items-center justify-center px-4 py-2 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-library-indigo transition-colors">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Exporter CSV
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-warm border border-slate-100 overflow-hidden">
+                <div class="border-b border-slate-200">
+                    <nav id="loanTabs" class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+                        <button onclick="setFilter('all')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-library-amber text-library-amber" data-filter="all">Tous</button>
+                        <button onclick="setFilter('active')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="active">En cours</button>
+                        <button onclick="setFilter('overdue')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="overdue">En retard</button>
+                        <button onclick="setFilter('returned')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="returned">Retournés</button>
+                    </nav>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Livre / Membre</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Dates</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Statut</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Pénalité</th>
+                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="loansTableBody" class="bg-white divide-y divide-slate-200">
+                            <!-- Loans will be rendered here -->
+                        </tbody>
+                    </table>
+                    <div id="noLoansMessage" class="hidden text-center py-12 text-slate-500">
+                        Aucun emprunt trouvé.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components.js"></script>
+    <script>
+        let allLoans = [];
+        let allBooks = [];
+        let allUsers = [];
+        let currentFilter = 'all';
+
+        async function loadData() {
+            try {
+                const [loans, books, users] = await Promise.all([
+                    api.loans.getAll(),
+                    api.books.getAll(),
+                    api.users.getAll()
+                ]);
+                allLoans = loans;
+                allBooks = books;
+                allUsers = users;
+                renderLoans();
+            } catch (err) { console.error(err); }
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            // Update UI
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('border-library-amber', 'text-library-amber');
+                    btn.classList.remove('border-transparent', 'text-slate-500');
+                } else {
+                    btn.classList.remove('border-library-amber', 'text-library-amber');
+                    btn.classList.add('border-transparent', 'text-slate-500');
+                }
+            });
+            renderLoans();
+        }
+
+        function renderLoans() {
+            const tbody = document.getElementById('loansTableBody');
+            const noLoans = document.getElementById('noLoansMessage');
+            
+            const filtered = allLoans.filter(l => {
+                if (currentFilter === 'all') return true;
+                return l.status === currentFilter;
+            }).sort((a, b) => new Date(b.borrow_date) - new Date(a.borrow_date));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                noLoans.classList.remove('hidden');
+                return;
+            }
+
+            noLoans.classList.add('hidden');
+            tbody.innerHTML = filtered.map(loan => {
+                const book = allBooks.find(b => b.id == loan.book_id);
+                const user = allUsers.find(u => u.id == loan.user_id);
+                
+                let statusBadge = '';
+                if (loan.status === 'active') statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">En cours</span>';
+                else if (loan.status === 'overdue') statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">En retard</span>';
+                else statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Retourné</span>';
+
+                const penaltyHtml = loan.penalty_amount > 0 ? `
+                    <div class="flex flex-col items-start">
+                        <span class="text-sm font-medium text-rose-600">${loan.penalty_amount}€</span>
+                        <span class="mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${loan.penalty_paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                            ${loan.penalty_paid ? 'Payée' : 'Non payée'}
+                        </span>
+                    </div>
+                ` : '<span class="text-sm text-slate-500">-</span>';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-slate-900">${book ? book.title : 'Livre inconnu'}</div>
+                            <div class="text-sm text-slate-500">${user ? user.name : 'Utilisateur inconnu'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-slate-900">Du: ${new Date(loan.borrow_date).toLocaleDateString('fr-FR')}</div>
+                            <div class="text-sm ${loan.status === 'overdue' ? 'text-rose-600 font-medium' : 'text-slate-500'}">
+                                Au: ${new Date(loan.due_date).toLocaleDateString('fr-FR')}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${penaltyHtml}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end space-x-2">
+                                ${loan.status !== 'returned' ? `
+                                    <button onclick="returnBook('${loan.id}')" class="text-emerald-600 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-all active:scale-95">
+                                        Retourner
+                                    </button>
+                                ` : ''}
+                                ${loan.penalty_amount > 0 && !loan.penalty_paid ? `
+                                    <button onclick="payPenalty('${loan.id}')" class="text-amber-600 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-all active:scale-95">
+                                        Valider paiement
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function returnBook(id) {
+            if (!confirm('Confirmer le retour de ce livre ?')) return;
+            try {
+                await api.loans.return(id);
+                loadData();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function payPenalty(id) {
+            if (!confirm('Valider le paiement de la pénalité ?')) return;
+            try {
+                // Assuming api.loans.payPenalty exists based on React component
+                await api.loans.update(id, { penalty_paid: true });
+                loadData();
+            } catch (err) { alert(err.message); }
+        }
+
+        function exportCSV() {
+            // Basic CSV export logic
+            const headers = ['Livre', 'Membre', 'Date Emprunt', 'Date Retour', 'Statut', 'Pénalité'];
+            const rows = allLoans.map(l => {
+                const b = allBooks.find(book => book.id == l.book_id);
+                const u = allUsers.find(user => user.id == l.user_id);
+                return [
+                    b ? b.title : '?',
+                    u ? u.name : '?',
+                    l.borrow_date,
+                    l.due_date,
+                    l.status,
+                    l.penalty_amount
+                ];
+            });
+
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "emprunts_bibli_net.csv");
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        async function init() {
+            try {
+                const user = await api.auth.me();
+                if (!user || user.role !== 'admin') { window.location.href = '/login.html'; return; }
+                document.getElementById('sidebarContainer').innerHTML = components.renderSidebar(true);
+                document.getElementById('headerContainer').innerHTML = components.renderHeader(user);
+                loadData();
+            } catch (err) { window.location.href = '/login.html'; }
+        }
+        init();
+    </script>
+</body>
+</html>

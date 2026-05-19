@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogue | Bibli'Net</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="../css/index.css?v=1.1">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    },
+                    boxShadow: {
+                        'warm': '0 10px 30px -10px rgba(15, 23, 42, 0.1)',
+                        'warm-lg': '0 20px 40px -15px rgba(15, 23, 42, 0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 flex h-screen overflow-hidden">
+    <div id="sidebarContainer" style="view-transition-name: sidebar"></div>
+    
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div id="headerContainer" style="view-transition-name: header"></div>
+        
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="mb-8">
+                <h1 class="text-2xl font-serif font-bold text-library-navy">Catalogue</h1>
+                <p class="text-slate-500 mt-1">Explorez notre collection et trouvez votre prochaine lecture.</p>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-4 mb-8">
+                <div class="relative flex-1">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </span>
+                    <input type="text" id="catalogSearch" oninput="renderBooks()" placeholder="Rechercher un titre, un auteur..." class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-library-amber focus:border-library-amber sm:text-sm transition-all">
+                </div>
+                <select id="catalogCategory" onchange="renderBooks()" class="block w-full sm:w-64 pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-library-amber focus:border-library-amber sm:text-sm rounded-lg border bg-white transition-all">
+                    <option value="all">Toutes les catégories</option>
+                </select>
+            </div>
+
+            <!-- Book Grid -->
+            <div id="booksGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                <!-- Cards will be rendered here -->
+            </div>
+
+            <div id="noResults" class="hidden text-center py-20">
+                <svg class="mx-auto h-12 w-12 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                <h3 class="text-lg font-medium text-slate-900">Aucun livre trouvé</h3>
+                <p class="text-slate-500">Essayez de modifier vos critères de recherche.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Book Detail Modal -->
+    <div id="bookDetailModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <div id="modalContent" class="p-8">
+                    <!-- Dynamic modal content -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components.js"></script>
+    <script>
+        let allBooks = [];
+        let allCategories = [];
+        let currentUser = null;
+
+        async function loadData() {
+            try {
+                const [books, cats, user] = await Promise.all([
+                    api.books.getAll(),
+                    api.categories.getAll(),
+                    api.auth.me()
+                ]);
+                allBooks = books;
+                allCategories = cats;
+                currentUser = user;
+                
+                const filter = document.getElementById('catalogCategory');
+                filter.innerHTML = '<option value="all">Toutes les catégories</option>' + 
+                    allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                
+                renderBooks();
+            } catch (err) { console.error(err); }
+        }
+
+        function renderBooks() {
+            const grid = document.getElementById('booksGrid');
+            const noResults = document.getElementById('noResults');
+            const search = document.getElementById('catalogSearch').value.toLowerCase();
+            const catId = document.getElementById('catalogCategory').value;
+
+            const filtered = allBooks.filter(b => {
+                const matchesSearch = b.title.toLowerCase().includes(search) || b.author.toLowerCase().includes(search);
+                const matchesCategory = catId === 'all' || b.category_id == catId;
+                return matchesSearch && matchesCategory;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+            grid.innerHTML = filtered.map(book => {
+                const category = allCategories.find(c => c.id == book.category_id);
+                const isAvailable = book.available_copies > 0;
+                const coverUrl = book.cover ? (book.cover.startsWith('http') ? book.cover : `http://127.0.0.1:8000/${book.cover}`) : null;
+
+                return `
+                    <div onclick="openBookDetail('${book.id}')" class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-warm-lg transition-all cursor-pointer group flex flex-col h-full">
+                        <div class="aspect-[2/3] bg-slate-100 relative overflow-hidden">
+                            ${coverUrl ? `<img src="${coverUrl}" alt="${book.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">` : 
+                            `<div class="w-full h-full flex items-center justify-center text-slate-300"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`}
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md ${isAvailable ? 'bg-emerald-500/90 text-white' : 'bg-slate-500/90 text-white'}">
+                                    ${isAvailable ? 'Disponible' : 'Indisponible'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-4 flex-1 flex flex-col">
+                            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" style="color: ${category ? category.color : '#64748b'}">
+                                ${category ? category.name : 'Général'}
+                            </p>
+                            <h3 class="text-sm font-bold text-slate-900 line-clamp-2 mb-1 group-hover:text-library-indigo transition-colors">${book.title}</h3>
+                            <p class="text-xs text-slate-500 line-clamp-1 mt-auto">${book.author}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function openBookDetail(id) {
+            try {
+                const book = await api.books.getById(id);
+                const category = allCategories.find(c => c.id == book.category_id);
+                const isAvailable = book.available_copies > 0;
+                const coverUrl = book.cover ? (book.cover.startsWith('http') ? book.cover : `http://127.0.0.1:8000/${book.cover}`) : null;
+
+                const content = document.getElementById('modalContent');
+                content.innerHTML = `
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <div class="w-full md:w-1/3 flex-shrink-0">
+                            <div class="aspect-[2/3] bg-slate-100 rounded-xl overflow-hidden shadow-lg border border-slate-200">
+                                ${coverUrl ? `<img src="${coverUrl}" alt="${book.title}" class="w-full h-full object-cover">` : 
+                                `<div class="w-full h-full flex items-center justify-center text-slate-300"><svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`}
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col">
+                            <div class="mb-6">
+                                <h2 class="text-3xl font-serif font-bold text-library-navy mb-2">${book.title}</h2>
+                                <p class="text-xl text-slate-600 font-medium">${book.author}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-6">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold ${isAvailable ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'}">
+                                    ${book.available_copies} / ${book.total_copies} disponibles
+                                </span>
+                                <span class="px-3 py-1 rounded-full text-xs font-bold" style="background-color: ${category ? category.color : '#cbd5e1'}20; color: ${category ? category.color : '#64748b'}">
+                                    ${category ? category.name : 'Général'}
+                                </span>
+                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">ISBN: ${book.isbn}</span>
+                            </div>
+                            <div class="prose prose-sm text-slate-600 mb-8 line-clamp-6">
+                                <p class="text-base leading-relaxed italic border-l-4 border-library-amber pl-4">${book.description || 'Aucun résumé disponible pour cet ouvrage.'}</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-5 mb-8 text-sm text-slate-600 grid grid-cols-2 gap-4 border border-slate-100">
+                                <div><span class="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Éditeur</span><p class="mt-0.5 font-medium">${book.publisher || '-'}</p></div>
+                                <div><span class="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Emplacement</span><p class="mt-0.5 font-medium">${book.location || '-'}</p></div>
+                            </div>
+                            <div class="mt-auto flex gap-4">
+                                ${isAvailable ? `
+                                    <button onclick="handleBorrow('${book.id}')" class="flex-1 bg-library-amber hover:bg-library-amberLight text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md active:scale-95 uppercase tracking-widest text-sm">Emprunter</button>
+                                ` : `
+                                    <button onclick="handleReserve('${book.id}')" class="flex-1 bg-library-navy hover:bg-library-indigo text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md active:scale-95 uppercase tracking-widest text-sm">Réserver</button>
+                                `}
+                                <button onclick="closeModal()" class="px-6 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-all uppercase tracking-widest text-sm">Fermer</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('bookDetailModal').classList.remove('hidden');
+            } catch (err) { alert(err.message); }
+        }
+
+        function closeModal() { document.getElementById('bookDetailModal').classList.add('hidden'); }
+
+        async function handleBorrow(id) {
+            try {
+                await api.loans.create({ book_id: id });
+                alert('Livre emprunté avec succès !');
+                closeModal();
+                loadData();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function handleReserve(id) {
+            try {
+                await api.reservations.create({ book_id: id });
+                alert('Livre réservé avec succès !');
+                closeModal();
+                loadData();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function init() {
+            try {
+                const user = await api.auth.me();
+                if (!user) { window.location.href = '/login.html'; return; }
+                document.getElementById('sidebarContainer').innerHTML = components.renderSidebar(false);
+                document.getElementById('headerContainer').innerHTML = components.renderHeader(user);
+                loadData();
+            } catch (err) { window.location.href = '/login.html'; }
+        }
+        init();
+    </script>
+</body>
+</html>

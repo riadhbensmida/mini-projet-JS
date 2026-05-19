@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Livres | Admin | Bibli'Net</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="../css/index.css?v=1.1">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    },
+                    boxShadow: {
+                        'warm': '0 10px 30px -10px rgba(15, 23, 42, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 flex h-screen overflow-hidden">
+    <div id="sidebarContainer" style="view-transition-name: sidebar"></div>
+    
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div id="headerContainer" style="view-transition-name: header"></div>
+        
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-2xl font-serif font-bold text-library-navy">Gestion des Livres</h1>
+                    <p class="text-slate-500 mt-1">Gérez le catalogue de la bibliothèque.</p>
+                </div>
+                <button onclick="openModal()" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-library-amber hover:bg-library-amberLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-library-amber transition-colors">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Ajouter un livre
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-warm border border-slate-100 overflow-hidden">
+                <!-- Filter Bar -->
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-4">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </span>
+                        <input type="text" id="searchInput" oninput="renderBooks()" placeholder="Rechercher par titre, auteur, ISBN..." class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-library-amber focus:border-library-amber sm:text-sm transition-all">
+                    </div>
+                    <select id="categoryFilter" onchange="renderBooks()" class="block w-full sm:w-64 pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-library-amber focus:border-library-amber sm:text-sm rounded-lg border bg-white transition-all">
+                        <option value="all">Toutes les catégories</option>
+                    </select>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Livre</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Catégorie</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Disponibilité</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emplacement</th>
+                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="booksTableBody" class="bg-white divide-y divide-slate-200">
+                            <!-- Books will be rendered here -->
+                        </tbody>
+                    </table>
+                    <div id="noBooksMessage" class="hidden text-center py-12 text-slate-500 font-medium">
+                        Aucun livre trouvé.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Book Modal -->
+    <div id="bookModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <form id="bookForm" class="p-8">
+                    <input type="hidden" id="bookId">
+                    <h3 id="modalTitle" class="text-2xl font-serif font-bold text-library-navy mb-6">Ajouter un livre</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Titre</label>
+                                <input type="text" id="title" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Auteur</label>
+                                <input type="text" id="author" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">ISBN</label>
+                                <input type="text" id="isbn" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Catégorie</label>
+                                <select id="category_id" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-white">
+                                    <option value="">Sélectionner une catégorie</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Exemplaires</label>
+                                    <input type="number" id="total_copies" required min="1" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Emplacement</label>
+                                    <input type="text" id="location" required placeholder="A1" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Couverture (Image)</label>
+                                <input type="file" id="coverFile" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-library-amber file:text-white hover:file:bg-library-amberLight">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end gap-4">
+                        <button type="button" onclick="closeModal()" class="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors uppercase tracking-widest">Annuler</button>
+                        <button type="submit" class="bg-library-navy text-white px-8 py-3 rounded-xl text-sm font-bold hover:bg-library-indigo transition-all shadow-md active:scale-95 uppercase tracking-widest">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components.js"></script>
+    <script>
+        let allBooks = [];
+        let allCategories = [];
+
+        async function loadData() {
+            try {
+                const [books, cats] = await Promise.all([
+                    api.books.getAll(),
+                    api.categories.getAll()
+                ]);
+                allBooks = books;
+                allCategories = cats;
+                
+                // Populate category filter and select
+                const filter = document.getElementById('categoryFilter');
+                const select = document.getElementById('category_id');
+                
+                const catOptions = allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                filter.innerHTML = '<option value="all">Toutes les catégories</option>' + catOptions;
+                select.innerHTML = '<option value="">Sélectionner une catégorie</option>' + catOptions;
+                
+                renderBooks();
+            } catch (err) { console.error(err); }
+        }
+
+        function renderBooks() {
+            const tbody = document.getElementById('booksTableBody');
+            const noBooks = document.getElementById('noBooksMessage');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const categoryId = document.getElementById('categoryFilter').value;
+
+            const filtered = allBooks.filter(b => {
+                const matchesSearch = b.title.toLowerCase().includes(search) || 
+                                    b.author.toLowerCase().includes(search) || 
+                                    b.isbn.includes(search);
+                const matchesCategory = categoryId === 'all' || b.category_id == categoryId;
+                return matchesSearch && matchesCategory;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                noBooks.classList.remove('hidden');
+                return;
+            }
+
+            noBooks.classList.add('hidden');
+            tbody.innerHTML = filtered.map(book => {
+                const category = allCategories.find(c => c.id == book.category_id);
+                const isAvailable = book.available_copies > 0;
+                const coverUrl = book.cover ? (book.cover.startsWith('http') ? book.cover : `http://127.0.0.1:8000/${book.cover}`) : null;
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-16 w-12 flex-shrink-0 bg-slate-100 rounded overflow-hidden border border-slate-200 flex items-center justify-center">
+                                    ${coverUrl ? `<img src="${coverUrl}" alt="${book.title}" class="h-full w-full object-cover">` : 
+                                    `<svg class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-slate-900 truncate max-w-[200px]">${book.title}</div>
+                                    <div class="text-sm text-slate-500">${book.author}</div>
+                                    <div class="text-xs text-slate-400 mt-1">ISBN: ${book.isbn}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: ${category ? category.color : '#cbd5e1'}20; color: ${category ? category.color : '#64748b'}">
+                                ${category ? category.name : 'Inconnue'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${isAvailable ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${book.available_copies} / ${book.total_copies} dispo
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${book.location}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end space-x-2">
+                                <button onclick="editBook('${book.id}')" class="p-1.5 text-slate-400 hover:text-library-indigo hover:bg-slate-50 rounded-md transition-all">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
+                                <button onclick="deleteBook('${book.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openModal(book = null) {
+            const modal = document.getElementById('bookModal');
+            const form = document.getElementById('bookForm');
+            form.reset();
+            document.getElementById('bookId').value = '';
+            
+            if (book) {
+                document.getElementById('modalTitle').textContent = 'Modifier le livre';
+                document.getElementById('bookId').value = book.id;
+                document.getElementById('title').value = book.title;
+                document.getElementById('author').value = book.author;
+                document.getElementById('isbn').value = book.isbn;
+                document.getElementById('category_id').value = book.category_id;
+                document.getElementById('total_copies').value = book.total_copies;
+                document.getElementById('location').value = book.location;
+            } else {
+                document.getElementById('modalTitle').textContent = 'Ajouter un livre';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('bookModal').classList.add('hidden'); }
+
+        async function editBook(id) {
+            try {
+                const book = await api.books.getById(id);
+                openModal(book);
+            } catch (err) { alert(err.message); }
+        }
+
+        async function deleteBook(id) {
+            if (!confirm('Supprimer ce livre ?')) return;
+            try {
+                await api.books.delete(id);
+                loadData();
+            } catch (err) { alert(err.message); }
+        }
+
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('bookId').value;
+            const formData = new FormData();
+            formData.append('title', document.getElementById('title').value);
+            formData.append('author', document.getElementById('author').value);
+            formData.append('isbn', document.getElementById('isbn').value);
+            formData.append('category_id', document.getElementById('category_id').value);
+            formData.append('total_copies', document.getElementById('total_copies').value);
+            formData.append('location', document.getElementById('location').value);
+            
+            const coverFile = document.getElementById('coverFile').files[0];
+            if (coverFile) formData.append('cover', coverFile);
+
+            try {
+                if (id) await api.books.update(id, formData);
+                else await api.books.create(formData);
+                closeModal();
+                loadData();
+            } catch (err) { alert(err.message); }
+        });
+
+        async function init() {
+            try {
+                const user = await api.auth.me();
+                if (!user || user.role !== 'admin') { window.location.href = '/login.html'; return; }
+                document.getElementById('sidebarContainer').innerHTML = components.renderSidebar(true);
+                document.getElementById('headerContainer').innerHTML = components.renderHeader(user);
+                loadData();
+            } catch (err) { window.location.href = '/login.html'; }
+        }
+        init();
+    </script>
+</body>
+</html>

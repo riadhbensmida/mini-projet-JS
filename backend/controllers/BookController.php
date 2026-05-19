@@ -45,7 +45,11 @@ class BookController
     // POST /api/books
     public function store(): void
     {
+        // Handle both JSON and FormData
         $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data) {
+            $data = $_POST;
+        }
 
         $this->bookModel->title = $data['title'] ?? '';
         $this->bookModel->author = $data['author'] ?? '';
@@ -53,11 +57,13 @@ class BookController
         $this->bookModel->publisher = $data['publisher'] ?? '';
         $this->bookModel->publication_year = (int) ($data['publication_year'] ?? 0);
         $this->bookModel->category_id = $data['category_id'] ?? '';
-        $this->bookModel->cover = $data['cover'] ?? '';
         $this->bookModel->description = $data['description'] ?? '';
         $this->bookModel->total_copies = (int) ($data['total_copies'] ?? 0);
         $this->bookModel->available_copies = (int) ($data['available_copies'] ?? 0);
         $this->bookModel->location = $data['location'] ?? '';
+
+        // Handle File Upload
+        $this->bookModel->cover = $this->handleFileUpload() ?? ($data['cover'] ?? '');
 
         if ($this->bookModel->create()) {
             http_response_code(201);
@@ -71,7 +77,13 @@ class BookController
     // PUT /api/books/{id}
     public function update(string $id): void
     {
+        // Handle both JSON and FormData (Note: PUT with FormData is tricky in PHP, 
+        // usually people use POST with _method=PUT or just stick to POST for uploads)
+        // For simplicity, we'll allow updating via POST if it's an update.
         $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data) {
+            $data = $_POST;
+        }
 
         $this->bookModel->title = $data['title'] ?? '';
         $this->bookModel->author = $data['author'] ?? '';
@@ -79,11 +91,17 @@ class BookController
         $this->bookModel->publisher = $data['publisher'] ?? '';
         $this->bookModel->publication_year = (int) ($data['publication_year'] ?? 0);
         $this->bookModel->category_id = $data['category_id'] ?? '';
-        $this->bookModel->cover = $data['cover'] ?? '';
         $this->bookModel->description = $data['description'] ?? '';
         $this->bookModel->total_copies = (int) ($data['total_copies'] ?? 0);
         $this->bookModel->available_copies = (int) ($data['available_copies'] ?? 0);
         $this->bookModel->location = $data['location'] ?? '';
+
+        $newCover = $this->handleFileUpload();
+        if ($newCover) {
+            $this->bookModel->cover = $newCover;
+        } else {
+            $this->bookModel->cover = $data['cover'] ?? '';
+        }
 
         if ($this->bookModel->update($id)) {
             echo json_encode(['success' => true]);
@@ -91,6 +109,25 @@ class BookController
             http_response_code(500);
             echo json_encode(['error' => 'Erreur de mise à jour']);
         }
+    }
+
+    private function handleFileUpload(): ?string
+    {
+        if (isset($_FILES['cover_file']) && $_FILES['cover_file']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../uploads/books/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $fileExtension = pathinfo($_FILES['cover_file']['name'], PATHINFO_EXTENSION);
+            $fileName = uniqid('book_', true) . '.' . $fileExtension;
+            $targetPath = $uploadDir . $fileName;
+
+            if (move_uploaded_file($_FILES['cover_file']['tmp_name'], $targetPath)) {
+                return 'http://127.0.0.1:8000/uploads/books/' . $fileName;
+            }
+        }
+        return null;
     }
 
     // DELETE /api/books/{id}

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/Loan.php';
 require_once __DIR__ . '/../models/Book.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Reservation.php';
 
 class LoanController
 {
@@ -91,16 +92,7 @@ class LoanController
     // PATCH /api/loans/{id}/return
     public function returnBook(string $loanId): void
     {
-        // Get the loan to find the book_id
-        $loans = $this->loanModel->readAll();
-        $loan = null;
-        foreach ($loans as $l) {
-            if ($l['id'] === $loanId) {
-                $loan = $l;
-                break;
-            }
-        }
-
+        $loan = $this->loanModel->readById($loanId);
         if (!$loan) {
             http_response_code(404);
             echo json_encode(['error' => 'Emprunt non trouvé']);
@@ -110,6 +102,16 @@ class LoanController
         if ($this->loanModel->returnBook($loanId)) {
             // Increase available copies
             $this->bookModel->updateAvailableCopies($loan['book_id'], 1);
+
+            // ── NEW: Trigger Reservation Notification ──
+            $reservationModel = new Reservation();
+            $oldestRes = $reservationModel->getOldestPendingByBook($loan['book_id']);
+            if ($oldestRes) {
+                $reservationModel->notify($oldestRes['id']);
+                // In a real app, you'd send an email/SMS here too
+            }
+            // ──────────────────────────────────────────
+
             echo json_encode(['success' => true]);
         } else {
             http_response_code(500);

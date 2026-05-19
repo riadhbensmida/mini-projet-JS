@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Membres | Admin | Bibli'Net</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="../css/index.css?v=1.1">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    },
+                    boxShadow: {
+                        'warm': '0 10px 30px -10px rgba(15, 23, 42, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 flex h-screen overflow-hidden">
+    <div id="sidebarContainer" style="view-transition-name: sidebar"></div>
+    
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div id="headerContainer" style="view-transition-name: header"></div>
+        
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-2xl font-serif font-bold text-library-navy">Gestion des Membres</h1>
+                    <p class="text-slate-500 mt-1">Gérez les inscriptions et les statuts des membres.</p>
+                </div>
+                <button onclick="openModal()" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-library-amber hover:bg-library-amberLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-library-amber transition-colors">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                    Nouveau Membre
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-warm border border-slate-100 overflow-hidden">
+                <!-- Search Bar -->
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+                    <div class="relative max-w-md">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </span>
+                        <input type="text" id="memberSearch" oninput="renderMembers()" placeholder="Rechercher par nom, email ou numéro..." class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-library-amber focus:border-library-amber sm:text-sm transition-all">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Membre</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Contact</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Statut</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Expiration</th>
+                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody" class="bg-white divide-y divide-slate-200">
+                            <!-- Members will be rendered here -->
+                        </tbody>
+                    </table>
+                    <div id="noMembersMessage" class="hidden text-center py-12 text-slate-500 font-medium">
+                        Aucun membre trouvé.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Member Modal -->
+    <div id="memberModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="memberForm" class="p-8">
+                    <input type="hidden" id="memberId">
+                    <h3 id="modalTitle" class="text-2xl font-serif font-bold text-library-navy mb-6">Nouveau Membre</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nom complet</label>
+                            <input type="text" id="name" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email</label>
+                                <input type="email" id="email" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Téléphone</label>
+                                <input type="text" id="phone" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Numéro de membre</label>
+                            <input type="text" id="member_number" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Date d'expiration adhésion</label>
+                            <input type="date" id="membership_expiry" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-library-amber focus:border-library-amber outline-none transition-all bg-white">
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end gap-4">
+                        <button type="button" onclick="closeModal()" class="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors uppercase tracking-widest">Annuler</button>
+                        <button type="submit" class="bg-library-navy text-white px-8 py-3 rounded-xl text-sm font-bold hover:bg-library-indigo transition-all shadow-md active:scale-95 uppercase tracking-widest">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components.js"></script>
+    <script>
+        let allUsers = [];
+        let allLoans = [];
+
+        async function loadData() {
+            try {
+                const [users, loans] = await Promise.all([
+                    api.users.getAll(),
+                    api.loans.getAll()
+                ]);
+                allUsers = users.filter(u => u.role === 'member');
+                allLoans = loans;
+                renderMembers();
+            } catch (err) { console.error(err); }
+        }
+
+        function calculateUserPenalty(userId) {
+            return allLoans
+                .filter(l => l.user_id == userId && !l.penalty_paid)
+                .reduce((acc, l) => acc + (parseFloat(l.penalty_amount) || 0), 0);
+        }
+
+        function renderMembers() {
+            const tbody = document.getElementById('membersTableBody');
+            const noMembers = document.getElementById('noMembersMessage');
+            const search = document.getElementById('memberSearch').value.toLowerCase();
+
+            const filtered = allUsers.filter(m => 
+                m.name.toLowerCase().includes(search) || 
+                m.email.toLowerCase().includes(search) || 
+                m.member_number.toLowerCase().includes(search)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                noMembers.classList.remove('hidden');
+                return;
+            }
+
+            noMembers.classList.add('hidden');
+            tbody.innerHTML = filtered.map(member => {
+                const isExpired = new Date(member.membership_expiry) < new Date();
+                const penalty = calculateUserPenalty(member.id);
+                const initial = member.name.charAt(0).toUpperCase();
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-library-indigo/10 flex items-center justify-center text-library-indigo font-bold text-lg shadow-inner">
+                                    ${initial}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-slate-900">${member.name}</div>
+                                    <div class="text-sm text-slate-500">${member.member_number}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-slate-900">${member.email}</div>
+                            <div class="text-sm text-slate-500">${member.phone}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex flex-col gap-1.5">
+                                <span class="w-fit px-2.5 py-0.5 rounded-full text-xs font-medium ${member.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                    ${member.status === 'active' ? 'Actif' : 'Inactif'}
+                                </span>
+                                ${penalty > 0 ? `
+                                    <span class="w-fit px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 uppercase tracking-wider">
+                                        Dette: ${penalty}€
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm ${isExpired ? 'text-rose-600 font-medium' : 'text-slate-900'}">
+                                ${new Date(member.membership_expiry).toLocaleDateString('fr-FR')}
+                            </div>
+                            ${isExpired ? '<div class="text-xs text-rose-500 font-bold uppercase tracking-widest mt-0.5">Expiré</div>' : ''}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end space-x-2">
+                                <button onclick="toggleUserStatus('${member.id}', '${member.status}')" class="p-1.5 rounded-lg transition-all ${member.status === 'active' ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'}" title="${member.status === 'active' ? 'Désactiver' : 'Activer'}">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        ${member.status === 'active' ? 
+                                            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>' : 
+                                            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'}
+                                    </svg>
+                                </button>
+                                <button onclick="editMember('${member.id}')" class="p-1.5 text-slate-400 hover:text-library-indigo hover:bg-slate-50 rounded-lg transition-all">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function toggleUserStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            try {
+                await api.users.update(id, { status: newStatus });
+                loadData();
+            } catch (err) { alert(err.message); }
+        }
+
+        function openModal(member = null) {
+            const modal = document.getElementById('memberModal');
+            const form = document.getElementById('memberForm');
+            form.reset();
+            document.getElementById('memberId').value = '';
+            
+            if (member) {
+                document.getElementById('modalTitle').textContent = 'Modifier le membre';
+                document.getElementById('memberId').value = member.id;
+                document.getElementById('name').value = member.name;
+                document.getElementById('email').value = member.email;
+                document.getElementById('phone').value = member.phone;
+                document.getElementById('member_number').value = member.member_number;
+                document.getElementById('membership_expiry').value = member.membership_expiry;
+            } else {
+                document.getElementById('modalTitle').textContent = 'Nouveau Membre';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('memberModal').classList.add('hidden'); }
+
+        async function editMember(id) {
+            try {
+                const member = await api.users.getById(id);
+                openModal(member);
+            } catch (err) { alert(err.message); }
+        }
+
+        document.getElementById('memberForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('memberId').value;
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                member_number: document.getElementById('member_number').value,
+                membership_expiry: document.getElementById('membership_expiry').value
+            };
+
+            try {
+                if (id) await api.users.update(id, data);
+                else await api.users.create({ ...data, role: 'member', password: 'password123' });
+                closeModal();
+                loadData();
+            } catch (err) { alert(err.message); }
+        });
+
+        async function init() {
+            try {
+                const user = await api.auth.me();
+                if (!user || user.role !== 'admin') { window.location.href = '/login.html'; return; }
+                document.getElementById('sidebarContainer').innerHTML = components.renderSidebar(true);
+                document.getElementById('headerContainer').innerHTML = components.renderHeader(user);
+                loadData();
+            } catch (err) { window.location.href = '/login.html'; }
+        }
+        init();
+    </script>
+</body>
+</html>

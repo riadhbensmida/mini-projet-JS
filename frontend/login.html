@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion | Bibli'Net</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="css/index.css?v=1.1">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body
+    class="bg-slate-50 font-sans text-slate-900 min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl"></div>
+
+    <div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div class="flex justify-center">
+            <div
+                class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 p-2">
+                <img src="/favicon.svg" alt="Bibli'Net" class="w-full h-full transform -rotate-3">
+            </div>
+        </div>
+        <h2 class="mt-6 text-center text-3xl font-serif font-bold text-library-navy">Bienvenue sur Bibli'Net</h2>
+        <p class="mt-2 text-center text-sm text-slate-600">Votre système de gestion de bibliothèque</p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div class="bg-white py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-slate-100">
+            <form id="loginForm" class="space-y-6">
+                <div id="errorMessage" class="hidden bg-rose-50 border-l-4 border-rose-500 p-4 rounded-md">
+                    <p class="text-sm text-rose-700"></p>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-slate-700">Adresse email</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <input id="email" type="email" required
+                            class="block w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-library-amber focus:border-library-amber sm:text-sm transition-colors"
+                            placeholder="vous@exemple.fr">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700">Mot de passe</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <input id="password" type="password" required
+                            class="block w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-library-amber focus:border-library-amber sm:text-sm transition-colors"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit"
+                        class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-library-navy hover:bg-library-indigo focus:outline-none transition-colors">
+                        Se connecter
+                        <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-slate-600">Pas encore de compte ? <a href="/register.html"
+                        class="font-medium text-library-amber hover:text-library-amberLight">S'inscrire</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const form = document.getElementById('loginForm');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorMsg = document.getElementById('errorMessage');
+
+                try {
+                    const user = await api.auth.login({ email, password });
+                    window.location.href = user.role === 'admin' ? '/admin/dashboard.html' : '/member/dashboard.html';
+
+                } catch (err) {
+                    errorMsg.classList.remove('hidden');
+                    errorMsg.querySelector('p').textContent = err.message;
+                }
+            });
+
+        });
+    </script>
+</body>
+
+</html>

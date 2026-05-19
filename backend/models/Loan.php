@@ -39,6 +39,21 @@ class Loan
         return $stmt->fetchAll();
     }
 
+    // ── Read By ID ──
+    public function readById(string $id): ?array
+    {
+        $stmt = $this->conn->prepare("
+            SELECT l.*, b.title as book_title, u.name as user_name
+            FROM {$this->table} l
+            LEFT JOIN books b ON l.book_id = b.id
+            LEFT JOIN users u ON l.user_id = u.id
+            WHERE l.id = :id
+        ");
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     // ── Read By User ──
     public function readByUserId(string $userId): array
     {
@@ -135,7 +150,8 @@ class Loan
         $stmt = $this->conn->prepare("
             UPDATE {$this->table} SET 
                 status = 'overdue',
-                penalty_amount = DATEDIFF(NOW(), due_date) * 1
+                penalty_amount = DATEDIFF(NOW(), due_date) * 1,
+                penalty_paid = 0
             WHERE status = 'active' AND due_date < NOW()
         ");
         $stmt->execute();

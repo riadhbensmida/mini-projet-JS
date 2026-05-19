@@ -13,6 +13,15 @@ require_once __DIR__ . '/../controllers/CategoryController.php';
 require_once __DIR__ . '/../controllers/LoanController.php';
 require_once __DIR__ . '/../controllers/ReservationController.php';
 
+// ── Base Route ──
+Router::get('/api', function() {
+    echo json_encode([
+        'name' => 'BiblioNet API',
+        'version' => '1.0.0',
+        'status' => 'running'
+    ]);
+});
+
 // ── Auth Routes ──
 $auth = new AuthController();
 Router::post('/api/auth/login', [$auth, 'login']);
@@ -34,7 +43,7 @@ Router::get('/api/books', [$books, 'index']);
 Router::get('/api/books/search', [$books, 'search']);
 Router::get('/api/books/{id}', [$books, 'show']);
 Router::post('/api/books', [$books, 'store']);
-Router::put('/api/books/{id}', [$books, 'update']);
+Router::post('/api/books/{id}', [$books, 'update']);
 Router::delete('/api/books/{id}', [$books, 'destroy']);
 
 // ── Category Routes ──

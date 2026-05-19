@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservations | Admin | Bibli'Net</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="../css/index.css?v=1.1">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    },
+                    boxShadow: {
+                        'warm': '0 10px 30px -10px rgba(15, 23, 42, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 flex h-screen overflow-hidden">
+    <div id="sidebarContainer" style="view-transition-name: sidebar"></div>
+    
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div id="headerContainer" style="view-transition-name: header"></div>
+        
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="mb-8">
+                <h1 class="text-2xl font-serif font-bold text-library-navy">Réservations</h1>
+                <p class="text-slate-500 mt-1">Gérez les demandes de réservation des membres.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-warm border border-slate-100 overflow-hidden">
+                <!-- Tab Navigation -->
+                <div class="border-b border-slate-200">
+                    <nav id="resTabs" class="-mb-px flex space-x-8 px-6 overflow-x-auto" aria-label="Tabs">
+                        <button onclick="setFilter('pending')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-library-amber text-library-amber" data-filter="pending">En attente</button>
+                        <button onclick="setFilter('all')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="all">Toutes</button>
+                        <button onclick="setFilter('converted')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="converted">Converties</button>
+                        <button onclick="setFilter('cancelled')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="cancelled">Annulées</button>
+                        <button onclick="setFilter('expired')" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="expired">Expirées</button>
+                    </nav>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Livre</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Membre</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date de demande</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Statut</th>
+                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="resTableBody" class="bg-white divide-y divide-slate-200">
+                            <!-- Reservations will be rendered here -->
+                        </tbody>
+                    </table>
+                    <div id="noResMessage" class="hidden text-center py-12 text-slate-500 font-medium">
+                        Aucune réservation trouvée.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components.js"></script>
+    <script>
+        let allRes = [];
+        let allBooks = [];
+        let allUsers = [];
+        let currentFilter = 'pending';
+
+        async function loadData() {
+            try {
+                const [res, books, users] = await Promise.all([
+                    api.reservations.getAll(),
+                    api.books.getAll(),
+                    api.users.getAll()
+                ]);
+                allRes = res;
+                allBooks = books;
+                allUsers = users;
+                renderReservations();
+            } catch (err) { console.error(err); }
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('border-library-amber', 'text-library-amber');
+                    btn.classList.remove('border-transparent', 'text-slate-500');
+                } else {
+                    btn.classList.remove('border-library-amber', 'text-library-amber');
+                    btn.classList.add('border-transparent', 'text-slate-500');
+                }
+            });
+            renderReservations();
+        }
+
+        function renderReservations() {
+            const tbody = document.getElementById('resTableBody');
+            const noRes = document.getElementById('noResMessage');
+            
+            const filtered = allRes.filter(r => {
+                if (currentFilter === 'all') return true;
+                return r.status === currentFilter;
+            }).sort((a, b) => new Date(b.reservation_date) - new Date(a.reservation_date));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                noRes.classList.remove('hidden');
+                return;
+            }
+
+            noRes.classList.add('hidden');
+            tbody.innerHTML = filtered.map(res => {
+                const book = allBooks.find(b => b.id == res.book_id);
+                const user = allUsers.find(u => u.id == res.user_id);
+                const isAvailable = book && book.available_copies > 0;
+
+                let statusBadge = '';
+                if (res.status === 'pending') statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">En attente</span>';
+                else if (res.status === 'converted') statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Convertie</span>';
+                else if (res.status === 'expired') statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Expirée</span>';
+                else statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">Annulée</span>';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-slate-900">${book ? book.title : 'Livre inconnu'}</div>
+                            <div class="text-xs ${isAvailable ? 'text-emerald-600 font-bold' : 'text-rose-600 font-medium'}">
+                                ${isAvailable ? 'Disponible' : 'Indisponible'}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-slate-900">${user ? user.name : 'Utilisateur inconnu'}</div>
+                            <div class="text-xs text-slate-500">${user ? user.email : ''}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-slate-900">${new Date(res.reservation_date).toLocaleDateString('fr-FR')}</div>
+                            <div class="text-xs text-slate-500">Expire le: ${new Date(res.expiry_date).toLocaleDateString('fr-FR')}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            ${res.status === 'pending' ? `
+                                <div class="flex items-center justify-end space-x-2">
+                                    <button onclick="convertToLoan('${res.id}')" ${!isAvailable ? 'disabled' : ''} class="flex items-center px-3 py-1.5 rounded-lg transition-all active:scale-95 ${isAvailable ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' : 'text-slate-300 bg-slate-50 cursor-not-allowed'}">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                        Prêter
+                                    </button>
+                                    <button onclick="cancelReservation('${res.id}')" class="flex items-center text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-all active:scale-95">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Annuler
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function convertToLoan(id) {
+            if (!confirm('Convertir cette réservation en emprunt ?')) return;
+            try {
+                await api.reservations.convertToLoan(id);
+                loadData();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function cancelReservation(id) {
+            if (!confirm('Annuler cette réservation ?')) return;
+            try {
+                await api.reservations.cancel(id);
+                loadData();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function init() {
+            try {
+                const user = await api.auth.me();
+                if (!user || user.role !== 'admin') { window.location.href = '/login.html'; return; }
+                document.getElementById('sidebarContainer').innerHTML = components.renderSidebar(true);
+                document.getElementById('headerContainer').innerHTML = components.renderHeader(user);
+                loadData();
+            } catch (err) { window.location.href = '/login.html'; }
+        }
+        init();
+    </script>
+</body>
+</html>

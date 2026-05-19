@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Réservations | Bibli'Net</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="../css/index.css?v=1.1">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif']
+                    },
+                    boxShadow: {
+                        'warm': '0 10px 30px -10px rgba(15, 23, 42, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 flex h-screen overflow-hidden">
+    <div id="sidebarContainer" style="view-transition-name: sidebar"></div>
+    
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div id="headerContainer" style="view-transition-name: header"></div>
+        
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="mb-8">
+                <h1 class="text-2xl font-serif font-bold text-library-navy">Mes Réservations</h1>
+                <p class="text-slate-500 mt-1">Suivez l'état de vos demandes de réservation.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-warm border border-slate-100 overflow-hidden">
+                <div class="p-6">
+                    <div id="reservationList" class="space-y-4">
+                        <!-- Reservations populated by JS -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="hidden text-center py-12 text-slate-500">
+                        <svg class="mx-auto h-12 w-12 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p>Vous n'avez aucune réservation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components.js"></script>
+    <script>
+        let currentUser = null;
+
+        async function init() {
+            try {
+                currentUser = await api.auth.me();
+                if (!currentUser || currentUser.role !== 'member') {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                document.getElementById('sidebarContainer').innerHTML = components.renderSidebar(false);
+                document.getElementById('headerContainer').innerHTML = components.renderHeader(currentUser);
+
+                loadReservations();
+            } catch (err) {
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function loadReservations() {
+            try {
+                const reservations = await api.reservations.getByUser(currentUser.id);
+                
+                // Sort by date newest first
+                reservations.sort((a, b) => new Date(b.reservation_date) - new Date(a.reservation_date));
+
+                const list = document.getElementById('reservationList');
+                const empty = document.getElementById('emptyState');
+
+                if (reservations.length === 0) {
+                    list.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                list.innerHTML = reservations.map(res => {
+                    const isPending = res.status === 'pending';
+                    let badgeClass = 'bg-slate-100 text-slate-600 border-slate-200';
+                    let statusLabel = 'Inconnu';
+
+                    if (res.status === 'pending') {
+                        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                        statusLabel = 'En attente';
+                    } else if (res.status === 'converted') {
+                        badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                        statusLabel = 'Convertie en emprunt';
+                    } else if (res.status === 'expired') {
+                        badgeClass = 'bg-slate-50 text-slate-400 border-slate-200';
+                        statusLabel = 'Expirée';
+                    } else if (res.status === 'cancelled') {
+                        badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                        statusLabel = 'Annulée';
+                    }
+
+                    return `
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center p-5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 transition-all shadow-warm hover:shadow-warm-lg group">
+                            <div class="flex-1 mb-4 sm:mb-0">
+                                <h3 class="text-lg font-serif font-bold text-slate-900 leading-tight italic mb-1 group-hover:text-library-indigo transition-colors">${res.book_title || 'Livre inconnu'}</h3>
+                                <p class="text-[11px] text-slate-400 font-medium italic mb-3">
+                                    par <span class="text-slate-500">${res.book_author || 'Auteur inconnu'}</span>
+                                </p>
+                                <span class="px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest ${badgeClass} shadow-sm">
+                                    ${statusLabel}
+                                </span>
+                            </div>
+                            <div class="text-left sm:text-right w-full sm:w-auto flex flex-col sm:items-end pl-0 sm:pl-6 border-l-0 sm:border-l border-slate-100">
+                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 mb-1">
+                                    Demandé le ${new Date(res.reservation_date).toLocaleDateString('fr-FR')}
+                                </p>
+                                <p class="text-sm font-medium text-slate-500 mb-4 font-bold">
+                                    Expire le ${new Date(res.expiry_date).toLocaleDateString('fr-FR')}
+                                </p>
+                                ${isPending ? `
+                                    <button onclick="cancelReservation('${res.id}')" class="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-rose-600 hover:text-rose-800 transition-colors">
+                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Annuler la réservation
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) { console.error(err); }
+        }
+
+        async function cancelReservation(id) {
+            if (!confirm('Annuler cette réservation ?')) return;
+            try {
+                await api.reservations.cancel(id);
+                loadReservations();
+            } catch (err) { alert(err.message); }
+        }
+
+        init();
+    </script>
+</body>
+</html>

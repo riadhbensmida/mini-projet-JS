@@ -49,6 +49,28 @@ class Reservation
         return $stmt->fetchAll();
     }
 
+    // ── Count Active Reservations by User ──
+    public function countActiveByUserId(string $userId): int
+    {
+        $stmt = $this->conn->prepare("
+            SELECT COUNT(*) FROM {$this->table} 
+            WHERE user_id = :user_id AND status IN ('pending', 'notified')
+        ");
+        $stmt->execute(['user_id' => $userId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    // ── Check if user already reserved this book ──
+    public function hasActiveReservation(string $userId, string $bookId): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT COUNT(*) FROM {$this->table} 
+            WHERE user_id = :user_id AND book_id = :book_id AND status IN ('pending', 'notified')
+        ");
+        $stmt->execute(['user_id' => $userId, 'book_id' => $bookId]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
     // ── Create ──
     public function create(): bool
     {
@@ -85,12 +107,37 @@ class Reservation
         return $stmt->execute(['id' => $reservationId]);
     }
 
+    // ── Get Oldest Pending for a Book ──
+    public function getOldestPendingByBook(string $bookId): ?array
+    {
+        $stmt = $this->conn->prepare("
+            SELECT * FROM {$this->table} 
+            WHERE book_id = :book_id AND status = 'pending' 
+            ORDER BY reservation_date ASC 
+            LIMIT 1
+        ");
+        $stmt->execute(['book_id' => $bookId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    // ── Notify Member (and set 48h limit) ──
+    public function notify(string $reservationId): bool
+    {
+        $stmt = $this->conn->prepare("
+            UPDATE {$this->table} 
+            SET status = 'notified', notified = 1, expiry_date = DATE_ADD(NOW(), INTERVAL 2 DAY) 
+            WHERE id = :id
+        ");
+        return $stmt->execute(['id' => $reservationId]);
+    }
+
     // ── Expire old reservations ──
     public function expireOldReservations(): int
     {
         $stmt = $this->conn->prepare("
             UPDATE {$this->table} SET status = 'expired' 
-            WHERE status = 'pending' AND expiry_date < NOW()
+            WHERE status IN ('pending', 'notified') AND expiry_date < NOW()
         ");
         $stmt->execute();
         return $stmt->rowCount();

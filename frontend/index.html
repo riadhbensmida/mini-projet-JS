@@ -1,21 +1,376 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fr">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <title>Bibli'Net | Votre bibliothèque numérique</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700;900&display=swap"
-    rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bibli'Net | Votre bibliothèque, réinventée</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        library: {
+                            navy: '#0F172A',
+                            indigo: '#312E81',
+                            amber: '#FF4500',
+                            amberLight: '#FF6347',
+                            cream: '#F8FAFC',
+                            creamDark: '#F1F5F9'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif'],
+                    },
+                    boxShadow: {
+                        'warm': '0 10px 30px -10px rgba(15, 23, 42, 0.1)',
+                        'warm-lg': '0 20px 40px -15px rgba(15, 23, 42, 0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        .delay-100 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-200 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-300 {
+            animation-delay: 0.3s;
+        }
+
+        .delay-400 {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(var(--tw-rotate, 0deg));
+            }
+
+            50% {
+                transform: translateY(-10px) rotate(var(--tw-rotate, 0deg));
+            }
+        }
+
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+    </style>
 </head>
 
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/index.tsx"></script>
+<body class="min-h-screen bg-library-cream font-sans text-slate-900 overflow-x-hidden">
+    <!-- Navbar -->
+    <nav class="absolute top-0 inset-x-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-library-navy rounded-xl flex items-center justify-center shadow-warm">
+                    <img src="/favicon.svg" alt="Bibli'Net" class="w-6 h-6">
+                </div>
+                <span class="ml-3 text-xl font-serif font-bold text-library-navy">Bibli'Net</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/login.html"
+                    class="hidden sm:inline-flex text-sm font-medium text-library-navy hover:text-library-indigo transition-colors px-4 py-2">
+                    Se connecter
+                </a>
+                <a href="/login.html"
+                    class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-library-navy hover:bg-library-indigo transition-all shadow-sm active:scale-95">
+                    Accéder à mon espace
+                    <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
+        <div class="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-library-amber/10 rounded-full blur-3xl">
+        </div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-library-indigo/10 rounded-full blur-3xl">
+        </div>
+
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div
+                        class="opacity-0 animate-slide-up inline-flex items-center px-3 py-1 rounded-full bg-library-amber/10 border border-library-amber/20 text-library-amber text-sm font-medium mb-6">
+                        <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i>
+                        Votre bibliothèque, réinventée
+                    </div>
+
+                    <h1
+                        class="opacity-0 animate-slide-up delay-100 text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-library-navy leading-tight">
+                        Découvrez le plaisir<br>
+                        de lire, <span class="text-library-amber italic">autrement</span>
+                    </h1>
+
+                    <p
+                        class="opacity-0 animate-slide-up delay-200 mt-6 text-lg text-slate-600 leading-relaxed max-w-xl">
+                        Bibli'Net est la plateforme de gestion de bibliothèque qui réunit lecteurs et bibliothécaires
+                        autour d'une expérience fluide, élégante et entièrement digitale.
+                    </p>
+
+                    <div class="opacity-0 animate-slide-up delay-300 mt-10 flex flex-col sm:flex-row gap-4">
+                        <a href="/login.html"
+                            class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-medium text-white bg-library-amber hover:bg-library-amberLight transition-all shadow-warm active:scale-95">
+                            Commencer maintenant
+                            <i data-lucide="arrow-right" class="ml-2 h-5 w-5"></i>
+                        </a>
+                        <a href="#features"
+                            class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-medium text-library-navy bg-white border border-slate-200 hover:border-library-navy transition-all active:scale-95">
+                            Découvrir les fonctionnalités
+                        </a>
+                    </div>
+
+                    <div
+                        class="opacity-0 animate-slide-up delay-400 mt-10 flex items-center gap-3 text-sm text-slate-500">
+                        <div class="flex -space-x-2">
+                            <img src="https://i.pravatar.cc/40?img=1"
+                                class="w-8 h-8 rounded-full border-2 border-library-cream object-cover">
+                            <img src="https://i.pravatar.cc/40?img=2"
+                                class="w-8 h-8 rounded-full border-2 border-library-cream object-cover">
+                            <img src="https://i.pravatar.cc/40?img=3"
+                                class="w-8 h-8 rounded-full border-2 border-library-cream object-cover">
+                            <img src="https://i.pravatar.cc/40?img=4"
+                                class="w-8 h-8 rounded-full border-2 border-library-cream object-cover">
+                        </div>
+                        <span>Rejoint par <strong class="text-library-navy">5 000+</strong> lecteurs</span>
+                    </div>
+                </div>
+
+                <!-- Visual -->
+                <div class="relative hidden lg:block opacity-0 animate-slide-up delay-200">
+                    <div class="relative aspect-square max-w-lg mx-auto">
+                        <div
+                            class="absolute top-0 left-12 w-48 h-64 rounded-lg shadow-warm-lg overflow-hidden border-4 border-white transform -rotate-6 animate-float">
+                            <img src="https://picsum.photos/seed/miserables/300/450" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute top-8 right-8 w-52 h-72 rounded-lg shadow-warm-lg overflow-hidden border-4 border-white transform rotate-3 animate-float"
+                            style="animation-delay: 0.5s">
+                            <img src="https://picsum.photos/seed/etranger/300/450" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute bottom-4 left-4 w-56 h-72 rounded-lg shadow-warm-lg overflow-hidden border-4 border-white transform rotate-2 animate-float"
+                            style="animation-delay: 1s">
+                            <img src="https://picsum.photos/seed/prince/300/450" class="w-full h-full object-cover">
+                        </div>
+
+                        <!-- Floating badge -->
+                        <div
+                            class="opacity-0 animate-slide-up delay-400 absolute bottom-0 right-0 bg-white rounded-xl shadow-warm-lg p-4 border border-slate-100 max-w-[200px]">
+                            <div class="flex items-center mb-2">
+                                <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="book-marked" class="w-4 h-4 text-emerald-600"></i>
+                                </div>
+                                <span class="ml-2 text-xs font-medium text-slate-900">Emprunt confirmé</span>
+                            </div>
+                            <p class="text-xs text-slate-500">"Le Petit Prince" disponible jusqu'au 15 juin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="relative bg-library-navy py-16 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-library-navy to-library-indigo"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-3xl sm:text-4xl font-serif font-bold text-library-amber mb-2">20K+</div>
+                    <div class="text-sm text-slate-300 uppercase tracking-wider">Ouvrages disponibles</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl sm:text-4xl font-serif font-bold text-library-amber mb-2">5 000</div>
+                    <div class="text-sm text-slate-300 uppercase tracking-wider">Membres actifs</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl sm:text-4xl font-serif font-bold text-library-amber mb-2">8</div>
+                    <div class="text-sm text-slate-300 uppercase tracking-wider">Catégories thématiques</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl sm:text-4xl font-serif font-bold text-library-amber mb-2">24/7</div>
+                    <div class="text-sm text-slate-300 uppercase tracking-wider">Accès en ligne</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20 sm:py-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="text-sm font-medium text-library-amber uppercase tracking-wider">Fonctionnalités</span>
+                <h2 class="mt-2 text-3xl sm:text-4xl font-serif font-bold text-library-navy">Tout ce dont vous avez
+                    besoin en un seul endroit</h2>
+                <p class="mt-4 text-lg text-slate-600">Une plateforme pensée pour les lecteurs comme pour les
+                    gestionnaires de bibliothèque.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div
+                    class="bg-white rounded-2xl p-6 shadow-warm border border-slate-100 transition-all hover:-translate-y-1">
+                    <div
+                        class="w-12 h-12 bg-library-amber/10 rounded-xl flex items-center justify-center mb-4 text-library-amber">
+                        <i data-lucide="library"></i>
+                    </div>
+                    <h3 class="text-lg font-serif font-bold text-library-navy mb-2">Catalogue riche</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Plus de 20 000 ouvrages classés par catégories, du
+                        roman classique à la science-fiction.</p>
+                </div>
+                <div
+                    class="bg-white rounded-2xl p-6 shadow-warm border border-slate-100 transition-all hover:-translate-y-1">
+                    <div
+                        class="w-12 h-12 bg-library-amber/10 rounded-xl flex items-center justify-center mb-4 text-library-amber">
+                        <i data-lucide="book-marked"></i>
+                    </div>
+                    <h3 class="text-lg font-serif font-bold text-library-navy mb-2">Emprunts simplifiés</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Empruntez jusqu'à 3 livres simultanément depuis
+                        votre espace personnel, en quelques clics.</p>
+                </div>
+                <div
+                    class="bg-white rounded-2xl p-6 shadow-warm border border-slate-100 transition-all hover:-translate-y-1">
+                    <div
+                        class="w-12 h-12 bg-library-amber/10 rounded-xl flex items-center justify-center mb-4 text-library-amber">
+                        <i data-lucide="calendar-clock"></i>
+                    </div>
+                    <h3 class="text-lg font-serif font-bold text-library-navy mb-2">Réservations en ligne</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Réservez vos livres préférés et soyez notifié dès
+                        qu'ils sont disponibles.</p>
+                </div>
+                <div
+                    class="bg-white rounded-2xl p-6 shadow-warm border border-slate-100 transition-all hover:-translate-y-1">
+                    <div
+                        class="w-12 h-12 bg-library-amber/10 rounded-xl flex items-center justify-center mb-4 text-library-amber">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <h3 class="text-lg font-serif font-bold text-library-navy mb-2">Espace sécurisé</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Vos données et votre historique de lecture restent
+                        privés et protégés.</p>
+                </div>
+                <div
+                    class="bg-white rounded-2xl p-6 shadow-warm border border-slate-100 transition-all hover:-translate-y-1">
+                    <div
+                        class="w-12 h-12 bg-library-amber/10 rounded-xl flex items-center justify-center mb-4 text-library-amber">
+                        <i data-lucide="search"></i>
+                    </div>
+                    <h3 class="text-lg font-serif font-bold text-library-navy mb-2">Recherche avancée</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Trouvez rapidement par titre, auteur, ISBN ou
+                        catégorie grâce à notre moteur intelligent.</p>
+                </div>
+                <div
+                    class="bg-white rounded-2xl p-6 shadow-warm border border-slate-100 transition-all hover:-translate-y-1">
+                    <div
+                        class="w-12 h-12 bg-library-amber/10 rounded-xl flex items-center justify-center mb-4 text-library-amber">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <h3 class="text-lg font-serif font-bold text-library-navy mb-2">Communauté de lecteurs</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Rejoignez des milliers de membres passionnés par
+                        la lecture et la culture.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quote -->
+    <section class="py-20 bg-library-creamDark">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <i data-lucide="quote" class="w-12 h-12 text-library-amber/40 mx-auto mb-6"></i>
+            <blockquote class="text-2xl sm:text-3xl font-serif italic text-library-navy leading-relaxed">
+                "Une bibliothèque n'est pas un luxe mais une nécessité de la vie."
+            </blockquote>
+            <cite class="block mt-6 text-sm text-slate-500 not-italic">— Henry Ward Beecher</cite>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-20 sm:py-28">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div
+                class="relative bg-library-navy rounded-3xl px-8 py-16 sm:px-16 sm:py-20 text-center overflow-hidden shadow-warm-lg">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-library-amber/20 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-library-indigo/40 rounded-full blur-3xl"></div>
+
+                <div class="relative z-10">
+                    <h2 class="text-3xl sm:text-4xl font-serif font-bold text-white">Prêt à ouvrir le prochain chapitre
+                        ?</h2>
+                    <p class="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">Rejoignez Bibli'Net dès aujourd'hui et
+                        accédez à des milliers d'ouvrages en quelques secondes.</p>
+                    <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="/login.html"
+                            class="inline-flex items-center justify-center px-8 py-3 rounded-lg text-base font-medium text-library-navy bg-library-amber hover:bg-library-amberLight transition-all shadow-warm active:scale-95">
+                            Se connecter
+                            <i data-lucide="arrow-right" class="ml-2 h-5 w-5"></i>
+                        </a>
+                        <a href="mailto:contact@biblinet.fr"
+                            class="inline-flex items-center justify-center px-8 py-3 rounded-lg text-base font-medium text-white border border-white/20 hover:bg-white/10 transition-all active:scale-95">
+                            Nous contacter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-library-navy text-slate-400 py-12 border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-library-indigo rounded-xl flex items-center justify-center">
+                    <img src="/favicon.svg" alt="Bibli'Net" class="w-6 h-6">
+                </div>
+                <span class="ml-3 text-lg font-serif font-bold text-white">Bibli'Net</span>
+            </div>
+            <div class="flex gap-6 text-sm">
+                <a href="#" class="hover:text-library-amber transition-colors">À propos</a>
+                <a href="#" class="hover:text-library-amber transition-colors">Confidentialité</a>
+                <a href="#" class="hover:text-library-amber transition-colors">Conditions</a>
+                <a href="#" class="hover:text-library-amber transition-colors">Contact</a>
+            </div>
+            <p class="text-xs">© 2026 Bibli'Net. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+        lucide.createIcons();
+        api.auth.me().then(user => {
+            if (user && user.role) {
+                window.location.href = user.role === 'admin' ? '/admin/dashboard.html' : '/member/dashboard.html';
+            }
+        }).catch(() => { });
+    </script>
 </body>
 
 </html>

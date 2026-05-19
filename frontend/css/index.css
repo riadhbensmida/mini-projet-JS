@@ -1,0 +1,75 @@
+/* 
+ * Global Design System - High Priority Force Load
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700;900&display=swap');
+
+/* Test style - remove this once you see the fonts change */
+/* body { border: 5px solid #FF4500 !important; } */
+
+/* Force Inter on everything by default */
+* {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Force Merriweather on headings and editorial classes */
+h1, h2, h3, h4, h5, h6, 
+.font-serif,
+.font-serif * {
+  font-family: 'Merriweather', Georgia, serif !important;
+}
+
+body {
+  font-family: 'Inter', sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom shadow utilities */
+.shadow-warm {
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.1) !important;
+}
+
+.shadow-warm-lg {
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.15) !important;
+}
+
+/* Premium Page Transitions (View Transitions API) */
+@view-transition {
+  navigation: auto;
+}
+
+/* Custom transition animations */
+::view-transition-old(root) {
+  animation: 0.3s ease-in-out both fade-out, 0.3s ease-in-out both scale-down;
+}
+
+::view-transition-new(root) {
+  animation: 0.4s ease-in-out both fade-in, 0.4s ease-in-out both scale-up;
+}
+
+/* Make Sidebar and Header perfectly constant (no animation) */
+::view-transition-group(sidebar),
+::view-transition-group(header) {
+  animation-duration: 0s;
+}
+
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scale-down { from { transform: scale(1); } to { transform: scale(0.98); } }
+@keyframes scale-up { from { transform: scale(1.02); } to { transform: scale(1); } }
+
+/* Fallback fadeIn animation for older browsers */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+body {
+  animation: fadeIn 0.4s ease-out forwards;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth link hover effect for better interaction */
+a {
+  transition: all 0.2s ease-in-out;
+}
